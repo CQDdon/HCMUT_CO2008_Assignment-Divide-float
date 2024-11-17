@@ -1,0 +1,59 @@
+# Xuat ky tu
+	.macro	putc(%ascii)
+ 	addi	$a0,$zero,%ascii
+ 	addi	$v0,$zero,11
+ 	syscall
+	.end_macro
+#Xuong dong
+	.macro	linefeed
+	putc	'\n'
+	.end_macro
+# Xuat chuoi asciiz
+	.macro	puts(%str_addr)
+	la	$a0,%str_addr
+	addi	$v0,$zero,4
+	syscall
+	.end_macro
+# Nhap nguyen co nhac
+	.macro	geti_p(%prompt,%int_var)
+	puts	%prompt
+	addi	$v0,$zero,5
+	syscall
+	sw	$v0,%int_var
+	.end_macro
+# Xuat nguyen co nhac
+	.macro	puti_p(%prompt,%int_var)
+	puts	%prompt
+	lw	$a0,%int_var
+	addi	$v0,$zero,1
+	syscall
+	.end_macro
+# Xuat thuc co nhac
+	.macro	putf_p(%prompt,%float_var)
+	puts	%prompt
+	l.s	$f12,%float_var
+	addi	$v0,$zero,2
+	syscall
+	.end_macro
+# Xuat chuoi co nhac
+	.macro	puts_p(%prompt,%str_var)
+	puts	%prompt
+	puts	%str_var
+	.end_macro
+# Mo file
+	.macro open_file(%filename,%mode,%move_to)
+   	 li $v0, 13                    # Syscall de mo file
+    	 la $a0, %filename               # Ten file
+   	 li $a1, %mode                      # Che do ghi (1 = write)
+   	 li $a2, 0                      # Quyen truy cap mac dinh
+   	 syscall
+   	 move %move_to, $v0                  # Luu file descriptor vao $s1
+   	 .end_macro 
+#Ghi chuoi "So diem nam trong hinh tron: " vao file   
+	.macro write_to_file(%filedes,%outpaddr,%numchar) 
+   	  la $a1, %outpaddr         # Dia chi cua so diem nam trong hinh tron: "
+    	  move $a0, %filedes                 # File descriptor dang duoc luu trong $s1
+       	  li $a2, %numchar                     # So luong ki tu can ghi (Do dai chuoi "So diem nam trong hinh tron: ")
+   	  li $v0, 15                     # Syscall ghi v o file
+    	 syscall
+    	 .end_macro 
