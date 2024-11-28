@@ -113,31 +113,31 @@ Kthuc:
 # -------------------------------	
 # Cac chuong trinh khac
 
-### Extract the sign bit of the float
-### Input  : $a0 -> 32-bit float
-### Output : $v0 -> 1 if the float is negative, 0 otherwise
+# Lay bit Sign cua float
+# Input  : $a0 -> 32-bit float
+# Output: Output : $v0 -> Sign (1 bit)
 extractSign:
-    srl $v0, $a0, 31  # Extract the sign bit (MSB)
+    andi $v0, $a0, 0x80000000 # Giu lai bit Sign (MSB)
     jr $ra
-   
-### Extract the biased exponent field of the float
-### Input  : $a0 -> 32-bit float
-### Output : $v0 -> Biased exponent (8 bits)
+
+# Lay 8 bit Exponent cua float
+# Input  : $a0 -> 32-bit float
+# Output: Output : $v0 -> Exponent (8 bits)
 extractExponent:
 	srl $v0, $a0, 23  
     andi $v0, $v0, 0xFF
     jr $ra
    
-### Extract the fraction field of the float
-### Input  : $a0 -> 32-bit float
-### Output : $v0 -> Fraction (23 bits)
+# Lay 23 bit Mantissa cua float
+# Input  : $a0 -> 32-bit float
+# Output: Output : $v0 -> Mantissa (8 bits)
 extractMantissa:
-    li $t0, 0x007FFFFF  # Bit mask for fraction (23 bits)
+    li $t0, 0x007FFFFF 
     and $v0, $a0, $t0
     ori  $v0, 0x800000
     jr $ra
 
-
+# Chia 2 
 DivisionAlgorithm:
     addi $sp, $sp, -12      # T?o không gian trên stack ð? lýu d? li?u
     sw $s0, 0($sp)          # Lýu giá tr? c? c?a $s0 vào stack
