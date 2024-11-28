@@ -61,16 +61,14 @@ tiep: sw $v0,fdescr #luu file descriptor
 
     #===================================
     # Dua du lieu tu dang nhi phan ve IEEE 754
-    # Truoc tien, ta lay sign bang cach dich phai 31 bit
-    lw $a0, mau
+    lw $a0, mau # Dua mau vao thanh ghi $a0 de tien hanh lay cac bits Sign, Exponent va Mantissa cua mau so
     jal extractSign
     move $s1, $v0
-    
     jal extractExponent
    	move $s3, $v0
-    
     jal extractMantissa
     move $s5, $v0
+    # Sign, Exponent va Mantissa cua mau so duoc luu vao cac thanh ghi lan luot la $1, $s3, $s5
     
     # Lam tuong tu voi tu so    
     lw $a0, tu
@@ -80,22 +78,25 @@ tiep: sw $v0,fdescr #luu file descriptor
     move $s4, $v0
     jal extractMantissa
     move $s6, $v0
+    # Sign, Exponent va Mantissa cua mau so duoc luu vao cac thanh ghi lan luot la $2, $s4, $s6
     
-    
-    xor	$s0, $s1, $s2
+    xor	$s0, $s1, $s2 # Sign mau xor Sign tu ta duoc bit Sign cua ket qua la bit MSB
     
 	move $a0, $s5
 	move $a1, $s6
+	# Dua 2 Mantissa vao tham so $a0 va $a1 de tien hanh chia Mantissa
 	jal DivisionAlgorithm
-	andi $v0, $v0, 0x007fffff # xoa bit an
+	# $v0 la ket qua cua phep chia, $v1 la so Exponent can bu 
+	andi $v0, $v0, 0x007fffff # xoa bit an cua Mantissa
 	
-	
-	sub $s3, $s3, $s4
-    addi $s3, $s3, 127   
-    sub $s3, $s3, $v1          
-	sll $s3, $s3, 23
+	# Tinh toan Exponent cho ket qua
+	sub $s3, $s3, $s4 # Dau tien, lay Exp mau - Exp tu
+    sub $s3, $s3, $v1 # Tru them phan bu    
+    addi $s3, $s3, 127 # Cong voi 127 de ra Exponent hoan chinh 
+	sll $s3, $s3, 23 # Dich trai Exponent 23 bit roi day vao $s0 
 	or $s0, $s0, $s3 
 		
+	# Them Mantissa vao va in ra ket qua
 	or $s0, $s0, $v0
 	sw $s0, result
 	
@@ -111,15 +112,6 @@ Kthuc:
 	syscall
 # -------------------------------	
 # Cac chuong trinh khac
-
-### Print a float to screen
-### Input  : $a0 -> 32-bit float
-### Output : None
-writeFloat:
-   mtc1 $a0, $f12    # Move the input to $f12
-   li $v0, 2         # Syscall code for printing float
-   syscall
-   jr $ra
 
 ### Extract the sign bit of the float
 ### Input  : $a0 -> 32-bit float
