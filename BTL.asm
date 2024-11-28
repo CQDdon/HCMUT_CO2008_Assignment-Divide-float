@@ -15,7 +15,7 @@ mau: .space 4
 tu: .space 4 
 tenfile: .asciiz "FLOAT2.BIN" 
 fdescr: .word 0 
-
+div_err: .asciiz "Error: Cannot divide.\n" 
 result: .word 0
 
 # Cac cau nhac nhap/xuat du lieu 
@@ -137,30 +137,32 @@ extractMantissa:
     ori  $v0, 0x800000
     jr $ra
 
-# Chia 2 
+# Ham chia 2 so nhi phan
 DivisionAlgorithm:
-    addi $sp, $sp, -12      # T?o không gian trên stack ð? lýu d? li?u
-    sw $s0, 0($sp)          # Lýu giá tr? c? c?a $s0 vào stack
-    sw $ra, 4($sp)          # Lýu ð?a ch? tr? v? ($ra) vào stack
-    sw $s1, 8($sp)          # Lýu giá tr? c? c?a $s1 vào stack
+	# Call stack de luu du lieu
+    addi $sp, $sp, -12       
+    # Luu $ra de nho dia chi tra ve; trong ham co su dung $s0 va $s1 nen luu lai de su dung lai sau khi goi ham
+    sw $s0, 0($sp)          
+    sw $ra, 4($sp)          
+    sw $s1, 8($sp)       
+	
+	# Day gia tri cua Mantissa mau vao $t0 (Dividend), Mantissa tu vao $t1 (Divisor)
+    move $t0, $a0    
+    move $t1, $a1 
 
-
-    move $t0, $a0           # $t0 nh?n giá tr? mantissa c?a s? b? chia (dividend)
-    move $t1, $a1           # $t1 nh?n giá tr? mantissa c?a s? chia (divisor)
-
-    add $s0, $0, $0         # $s0 (quotient) kh?i t?o b?ng 0
-    add $v1, $0, $0         # $v1 kh?i t?o 0 (v? trí d?u th?p phân ban ð?u)
-    li $t8, 0               # $t8 kh?i t?o 0 (bi?n ð?m s? l?n l?p)
+    add $s0, $0, $0 # Khoi tao quotient ($s0) = 0
+    add $v1, $0, $0 # $v1 de tinh phan bu cho Exponent, mac dinh = 0
+    li $t8, 0 # Bien dem $t8
 
 	
 loop:   
-    bgtu $t8, 23, check     # L?p 24 l?n (t?i ða s? bit mantissa)
-    addi $t8, $t8, 1        # Tãng b? ð?m v?ng l?p
-    sub $t0, $t0, $t1       # $t0 = $t0 - $t1 (th? tr? s? chia)
-    sll $s0, $s0, 1         # D?ch trái $s0 (ðãng k? quotient)
-    slt $t2, $t0, $0        # $t2 = ($t0 < 0)? 1 : 0
-    bne $t2, $0, else       # N?u $t0 < 0 (th? sai), nh?y t?i else
-    addi $s0, $s0, 1        # Ð?t bit LSB c?a $s0 thành 1 (chia ðúng)
+    bgtu $t8, 23, check # Kiem tra xem da du 23 lan lap chua
+    addi $t8, $t8, 1 # Tang bien dem them 1
+    sub $t0, $t0, $t1 # Dividend -= Divisor
+    sll $s0, $s0, 1 # Dich trai de xet bit tiep theo cua Quotient
+    slt $t2, $t0, $0 # Neu Dividend duong thi Quotient++, nguoc lai Quotient khong doi, tien hanh xet bit tiep theo
+    bne $t2, $0, else 
+    addi $s0, $s0, 1
     j out
 
 else:   
@@ -172,14 +174,9 @@ out:
 
 
 check:  
-    slt $t2, $a0, $a1       # N?u dividend < divisor, c?n chu?n hóa
-    beq $t2, $0, exit       # N?u dividend >= divisor, nh?y t?i exit
     move $a0, $s0           # Lýu quotient vào $a0
     jal Normalization       # G?i hàm chu?n hóa
     j return
-
-
-exit:   
     move $v0, $s0           # $v0 ch?a k?t qu? mantissa
 
 return: 
@@ -191,20 +188,28 @@ return:
 	
 	
 Normalization:
-    lui $t0, 0x0040         # $t0 = 0x40 (ð?t bit th? 23 thành 1)
-    addi $t2, $0, 1         # Kh?i t?o b? ð?m d?ch (s? l?n d?ch)
+    lui $t0, 0x0080 # Dung $t0 de kiem tra bit thu 24 cua quotient (bit an phai luon bang 1)
+    addi $t2, $0, 0 # Bien dem moi de nho so lan dich Quotient
 
 loop2:  
-    and $t1, $a0, $t0       # Ki?m tra bit 23 c?a dividend
-    bne $t1, $0, else2      # N?u bit 23 = 1, thoát kh?i v?ng l?p
-    addi $t2, $t2, 1        # Tãng b? ð?m d?ch
-    sll $a0, $a0, 1         # D?ch trái dividend
+	bgtu $t2, 23, error
+    and $t1, $a0, $t0 # Kiem tra bit thu 24 cua Quotient co phai 1 khong
+    bne $t1, $0, else2 # Neu bang, thoat khoi vong lap
+    addi $t2, $t2, 1 # Tang bien dem
+    sll $a0, $a0, 1 # Dich trai Quotient
     j loop2
 
 else2:  
-    sll $a0, $a0, 1         # D?ch thêm 1 l?n ð? ð?t bit 24 = 1
-    move $v0, $a0           # Lýu mantissa ð? chu?n hóa vào $v0
-    move $v1, $t2           # Lýu s? l?n d?ch (v? trí d?u th?p phân) vào $v1
-    jr $ra                  # Quay l?i
+    move $v0, $a0 # Lýu mantissa da chuan hoa $v0
+    move $v1, $t2 # Luu so lan dich vi tri vao $v1
+    jr $ra   
 
+
+error:
+	addi $v0, $zero, 4
+	la $a0, div_err
+	syscall
+	jal Kthuc
+	
+	
 # -------------------------------
