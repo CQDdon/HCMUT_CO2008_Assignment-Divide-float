@@ -7,7 +7,6 @@
 #===================================
 
 #Chuong trinh: BTL de 4
-.include "macro.mac" 
 # Data segment 
 .data 
 # Cac dinh nghia bien 
@@ -60,18 +59,16 @@ tiep: sw $v0,fdescr #luu file descriptor
     syscall 
 
     #===================================
-    # Dua du lieu tu dang nhi phan ve IEEE 754
-    lw $a0, mau # Dua mau vao thanh ghi $a0 de tien hanh lay cac bits Sign, Exponent va Mantissa cua mau so
-    jal extractSign
-    move $s1, $v0
-    jal extractExponent
-   	move $s3, $v0
-    jal extractMantissa
-    move $s5, $v0
-    # Sign, Exponent va Mantissa cua mau so duoc luu vao cac thanh ghi lan luot la $1, $s3, $s5
-    
-    # Lam tuong tu voi tu so    
+    # Dau tien kiem tra xem lieu tu so co bang 0 hay khong
     lw $a0, tu
+    bnez $a0, continue
+    la $a0, div0 
+    addi $v0, $zero, 4 
+    syscall 
+    jal Kthuc
+continue:
+    # Dua du lieu tu dang nhi phan ve IEEE 754
+    # Tien hanh lay cac bits Sign, Exponent va Mantissa cua tu so
     jal extractSign
     move $s2, $v0
     jal extractExponent
@@ -79,6 +76,22 @@ tiep: sw $v0,fdescr #luu file descriptor
     jal extractMantissa
     move $s6, $v0
     # Sign, Exponent va Mantissa cua mau so duoc luu vao cac thanh ghi lan luot la $2, $s4, $s6
+    
+    # Lam tuong tu voi mau so    
+    lw $a0, mau 
+    bnez $a0, continue2
+    move $a0, $zero 
+    addi $v0, $zero, 2
+    syscall 
+    jal Kthuc
+continue2:
+    jal extractSign
+    move $s1, $v0
+    jal extractExponent
+   	move $s3, $v0
+    jal extractMantissa
+    move $s5, $v0
+    # Sign, Exponent va Mantissa cua mau so duoc luu vao cac thanh ghi lan luot la $1, $s3, $s5
     
     xor	$s0, $s1, $s2 # Sign mau xor Sign tu ta duoc bit Sign cua ket qua la bit MSB
     
@@ -166,25 +179,24 @@ loop:
     j out
 
 else:   
-    add $t0, $t0, $t1       # Khôi ph?c giá tr? $t0 (do th? sai)
+    add $t0, $t0, $t1 # Khoi phuc gia tri cho Dividend
 
 out:    
-    sll $t0, $t0, 1         # D?ch trái $t0 (chu?n b? cho bit ti?p theo)
-    j loop                  # Quay l?i ð?u v?ng l?p
+    sll $t0, $t0, 1 # Dich trai Dividend de tiep tuc chia
+    j loop 
 
 
 check:  
-    move $a0, $s0           # Lýu quotient vào $a0
-    jal Normalization       # G?i hàm chu?n hóa
-    j return
-    move $v0, $s0           # $v0 ch?a k?t qu? mantissa
+    move $a0, $s0 
+    jal Normalization # Chuan hoa Quotient 
+    j return # Giai phong stack, ket thuc phep chia
 
 return: 
-    lw $ra, 4($sp)          # Khôi ph?c giá tr? $ra
-    lw $s0, 0($sp)          # Khôi ph?c giá tr? $s0
-    lw $s1, 8($sp)          # Khôi ph?c giá tr? $s1
-    addi $sp, $sp, 8        # Gi?i phóng stack
-    jr $ra          #Return	
+    lw $ra, 4($sp)          
+    lw $s0, 0($sp)      
+    lw $s1, 8($sp)     
+    addi $sp, $sp, 8    
+    jr $ra   
 	
 	
 Normalization:
@@ -192,7 +204,7 @@ Normalization:
     addi $t2, $0, 0 # Bien dem moi de nho so lan dich Quotient
 
 loop2:  
-	bgtu $t2, 23, error
+	bgtu $t2, 23, error # Neu kiem tra het 24 bit ma van khong tim duoc bit 1 thi bao loi
     and $t1, $a0, $t0 # Kiem tra bit thu 24 cua Quotient co phai 1 khong
     bne $t1, $0, else2 # Neu bang, thoat khoi vong lap
     addi $t2, $t2, 1 # Tang bien dem
@@ -207,7 +219,7 @@ else2:
 
 error:
 	addi $v0, $zero, 4
-	la $a0, div_err
+	la $a0, div_err # Cannot divide
 	syscall
 	jal Kthuc
 	

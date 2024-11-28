@@ -4,8 +4,8 @@
 # Data segment 
  .data 
 # Cac dinh nghia bien 
-dulieu1: .word 0xc0400000
-dulieu2: .word 0x40200000
+dulieu1: .word 0x40000000
+dulieu2: .word 0x41500000
 tenfile: .asciiz "FLOAT2.BIN" 
 fdescr: .word 0 
 # Cac cau nhac nhap/xuat du lieu 
