@@ -16,9 +16,11 @@ tenfile: .asciiz "FLOAT2.BIN"
 fdescr: .word 0 
 div_err: .asciiz "Error: Cannot divide.\n" 
 result: .word 0
+zero: .float 0.0
 
 # Cac cau nhac nhap/xuat du lieu 
 str_loi: .asciiz "Mo file bi loi." 
+cach: .asciiz " = "
 div0: .asciiz "Error: Division by zero\n"
 #----------------------------------- 
 # Code segment 
@@ -59,38 +61,54 @@ tiep: sw $v0,fdescr #luu file descriptor
     syscall 
 
     #===================================
-    # Dau tien kiem tra xem lieu tu so co bang 0 hay khong
+    # In phep chia
+    la $t1, mau
+    la $t2, tu
+    lwc1 $f12, 0($t1)
+    addi $v0,$zero,2
+    syscall 
+    li $a0, '/'
+    addi $v0,$zero,11
+    syscall 
+    lwc1 $f12, 0($t2)
+    addi $v0,$zero,2
+    syscall 
+    la $a0, cach
+    addi $v0,$zero,4
+    syscall 
+    # Dau tien kiem tra xem lieu tu hay mau so co bang 0 hay khong
     lw $a0, tu
-    bnez $a0, continue
-    la $a0, div0 
+    bnez $a0, xet_mau
+    la $a0, div0 # Neu tu = 0 thi bao loi
     addi $v0, $zero, 4 
     syscall 
     jal Kthuc
+xet_mau:
+    lw $a0, mau
+    bnez $a0, continue
+    l.s $f12, zero  # Neu mau = 0 thi ket qua = 0
+    addi $v0, $zero, 2
+    syscall
+    jal Kthuc
 continue:
     # Dua du lieu tu dang nhi phan ve IEEE 754
-    # Tien hanh lay cac bits Sign, Exponent va Mantissa cua tu so
-    jal extractSign
-    move $s2, $v0
-    jal extractExponent
-    move $s4, $v0
-    jal extractMantissa
-    move $s6, $v0
-    # Sign, Exponent va Mantissa cua mau so duoc luu vao cac thanh ghi lan luot la $2, $s4, $s6
-    
-    # Lam tuong tu voi mau so    
-    lw $a0, mau 
-    bnez $a0, continue2
-    move $a0, $zero 
-    addi $v0, $zero, 2
-    syscall 
-    jal Kthuc
-continue2:
+    # Tien hanh lay cac bits Sign, Exponent va Mantissa cua mau so
     jal extractSign
     move $s1, $v0
     jal extractExponent
-   	move $s3, $v0
+    move $s3, $v0
     jal extractMantissa
     move $s5, $v0
+    # Sign, Exponent va Mantissa cua mau so duoc luu vao cac thanh ghi lan luot la $2, $s4, $s6
+    
+    # Lam tuong tu voi tu so    
+    lw $a0, tu
+    jal extractSign
+    move $s2, $v0
+    jal extractExponent
+   	move $s4, $v0
+    jal extractMantissa
+    move $s6, $v0
     # Sign, Exponent va Mantissa cua mau so duoc luu vao cac thanh ghi lan luot la $1, $s3, $s5
     
     xor	$s0, $s1, $s2 # Sign mau xor Sign tu ta duoc bit Sign cua ket qua la bit MSB
