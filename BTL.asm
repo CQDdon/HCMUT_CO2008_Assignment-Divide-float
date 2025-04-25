@@ -1,10 +1,3 @@
-#===================================
-# LUU Y KHI SU DUNG GITHUB
-# Tao branch rieng de code, khong code tren branch main
-# Truoc khi code, phai git pull origin main ve branch cua minh, de khong bi lech lich su commit
-# Khong duoc push truc tiep len main, phai push ben branch cua ban than, sau do thong bao cho thanh vien con lai de kiem tra roi moi merge pull request
-# Khuyen khich viet description cho pull request 
-#===================================
 
 #Chuong trinh: BTL de 4
 # Data segment 
@@ -230,7 +223,7 @@ loop2:
     j loop2
 
 else2:  
-    move $v0, $a0 # Lýu mantissa da chuan hoa $v0
+    move $v0, $a0 # LÃ½u mantissa da chuan hoa $v0
     move $v1, $t2 # Luu so lan dich vi tri vao $v1
     jr $ra   
 
